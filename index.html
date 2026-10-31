@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>불규칙 동사 3단 변화 스피드 챈트</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Apple SD Gothic Neo", sans-serif;
+      background: #f1f5f9;
+      color: #0f172a;
+      padding: 16px;
+    }
+    .container { max-width: 860px; margin: 0 auto; }
+    header {
+      background: #ffffff;
+      padding: 18px;
+      border-radius: 12px;
+      text-align: center;
+      margin-bottom: 12px;
+      border: 1px solid #cbd5e1;
+    }
+    h1 { color: #3730a3; font-size: 1.4rem; margin-bottom: 4px; font-weight: 800; }
+    p { font-size: 0.9rem; color: #64748b; }
+    
+    .sticky-bar {
+      position: sticky;
+      top: 10px;
+      z-index: 50;
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      padding: 12px;
+      border-radius: 12px;
+      margin-bottom: 12px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.08);
+    }
+    .btn-group { display: flex; gap: 8px; flex-wrap: wrap; }
+    button {
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 700;
+      padding: 8px 14px;
+      border-radius: 8px;
+      border: 1px solid #cbd5e1;
+      background: #ffffff;
+    }
+    .btn-play { background: #4f46e5; color: #ffffff; border-color: #4f46e5; }
+    .btn-stop { background: #ef4444; color: #ffffff; border-color: #ef4444; }
+    
+    .filter-bar {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 12px;
+      overflow-x: auto;
+    }
+    .filter-btn.active {
+      background: #312e81;
+      color: #ffffff;
+      border-color: #312e81;
+    }
+
+    .word-list { display: flex; flex-direction: column; gap: 8px; }
+    .word-card {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .word-card.active-card {
+      border: 2px solid #4f46e5;
+      background: #eef2ff;
+    }
+    .badge {
+      font-size: 0.75rem;
+      font-weight: 800;
+      background: #e2e8f0;
+      color: #334155;
+      padding: 4px 8px;
+      border-radius: 6px;
+      min-width: 40px;
+      text-align: center;
+    }
+    .verbs {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-grow: 1;
+      flex-wrap: wrap;
+    }
+    .v-chip {
+      font-size: 1rem;
+      font-weight: 700;
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      padding: 4px 10px;
+      border-radius: 6px;
+    }
+    .v-chip.speaking {
+      background: #fde047 !important;
+      border-color: #eab308 !important;
+      color: #713f12 !important;
+      transform: scale(1.08);
+    }
+    .arrow { color: #94a3b8; font-weight: bold; }
+    .meaning { font-size: 0.9rem; font-weight: 600; color: #475569; min-width: 80px; text-align: right; }
+    .btn-row { font-size: 0.8rem; padding: 6px 10px; background: #f8fafc; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <h1>불규칙 동사 3단 변화 리듬 챈트</h1>
+    <p>원형 ➔ 과거형 ➔ 과거분사형 (속도감 있는 리듬 암기)</p>
+  </header>
+
+  <div class="sticky-bar">
+    <div class="btn-group">
+      <button class="btn-play" id="btnPlayAll" onclick="togglePlayAll()">▶ 전체 연속 재생</button>
+      <button class="btn-stop" onclick="stopAll()">⏹ 정지</button>
+    </div>
+    <div style="font-size:0.9rem; font-weight:700;">
+      속도:
+      <select id="speedSel" style="padding:6px; font-weight:700;" onchange="updateSpeed()">
+        <option value="1.0">1.0x (보통)</option>
+        <option value="1.15" selected>1.15x (속도감)</option>
+        <option value="1.3">1.3x (빠른 챈트)</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="filter-bar">
+    <button class="filter-btn active" onclick="setFilter('ALL', this)">전체 (88)</button>
+    <button class="filter-btn" onclick="setFilter('AAA', this)">AAA형</button>
+    <button class="filter-btn" onclick="setFilter('ABB', this)">ABB형</button>
+    <button class="filter-btn" onclick="setFilter('ABC', this)">ABC형</button>
+    <button class="filter-btn" onclick="setFilter('ABA', this)">ABA형</button>
+  </div>
+
+  <div class="word-list" id="list"></div>
+</div>
+
+<script>
+const VERBS = [
+  // 1. AAA형
+  { type: "AAA", base: "cost", past: "cost", pp: "cost", meaning: "비용이 들다" },
+  { type: "AAA", base: "hit", past: "hit", pp: "hit", meaning: "치다" },
+  { type: "AAA", base: "hurt", past: "hurt", pp: "hurt", meaning: "다치다" },
+  { type: "AAA", base: "let", past: "let", pp: "let", meaning: "~하게 하다" },
+  { type: "AAA", base: "put", past: "put", pp: "put", meaning: "놓다" },
+  { type: "AAA", base: "read", past: "read", pp: "read", meaning: "읽다", pastSay: "red", ppSay: "red" },
+  { type: "AAA", base: "set", past: "set", pp: "set", meaning: "놓다" },
+  { type: "AAA", base: "shut", past: "shut", pp: "shut", meaning: "닫다" },
+  { type: "AAA", base: "spread", past: "spread", pp: "spread", meaning: "퍼지다" },
+
+  // 2. ABB형 (2개 형태 완벽 분리)
+  { type: "ABB", base: "bring", past: "brought", pp: "brought", meaning: "가져오다" },
+  { type: "ABB", base: "build", past: "built", pp: "built", meaning: "짓다" },
+  { type: "ABB", base: "burn", past: "burned", pp: "burned", meaning: "타다 (규칙)" },
+  { type: "ABB", base: "burn", past: "burnt", pp: "burnt", meaning: "타다 (불규칙)" },
+  { type: "ABB", base: "buy", past: "bought", pp: "bought", meaning: "사다" },
+  { type: "ABB", base: "catch", past: "caught", pp: "caught", meaning: "잡다" },
+  { type: "ABB", base: "dream", past: "dreamed", pp: "dreamed", meaning: "꿈꾸다 (규칙)" },
+  { type: "ABB", base: "dream", past: "dreamt", pp: "dreamt", meaning: "꿈꾸다 (불규칙)" },
+  { type: "ABB", base: "feed", past: "fed", pp: "fed", meaning: "먹이다" },
+  { type: "ABB", base: "feel", past: "felt", pp: "felt", meaning: "느끼다" },
+  { type: "ABB", base: "fight", past: "fought", pp: "fought", meaning: "싸우다" },
+  { type: "ABB", base: "find", past: "found", pp: "found", meaning: "발견하다" },
+  { type: "ABB", base: "get", past: "got", pp: "got", meaning: "얻다 (got형)" },
+  { type: "ABB", base: "get", past: "got", pp: "gotten", meaning: "얻다 (gotten형)" },
+  { type: "ABB", base: "have", past: "had", pp: "had", meaning: "가지다, 먹다" },
+  { type: "ABB", base: "hear", past: "heard", pp: "heard", meaning: "듣다" },
+  { type: "ABB", base: "hold", past: "held", pp: "held", meaning: "지니다" },
+  { type: "ABB", base: "keep", past: "kept", pp: "kept", meaning: "유지하다" },
+  { type: "ABB", base: "lay", past: "laid", pp: "laid", meaning: "놓다, 낳다" },
+  { type: "ABB", base: "lead", past: "led", pp: "led", meaning: "인도하다" },
+  { type: "ABB", base: "leave", past: "left", pp: "left", meaning: "떠나다" },
+  { type: "ABB", base: "lend", past: "lent", pp: "lent", meaning: "빌려주다" },
+  { type: "ABB", base: "lose", past: "lost", pp: "lost", meaning: "잃어버리다" },
+  { type: "ABB", base: "make", past: "made", pp: "made", meaning: "만들다" },
+  { type: "ABB", base: "mean", past: "meant", pp: "meant", meaning: "의미하다" },
+  { type: "ABB", base: "meet", past: "met", pp: "met", meaning: "만나다" },
+  { type: "ABB", base: "pay", past: "paid", pp: "paid", meaning: "지불하다" },
+  { type: "ABB", base: "say", past: "said", pp: "said", meaning: "말하다" },
+  { type: "ABB", base: "sell", past: "sold", pp: "sold", meaning: "팔다" },
+  { type: "ABB", base: "send", past: "sent", pp: "sent", meaning: "보내다" },
+  { type: "ABB", base: "sit", past: "sat", pp: "sat", meaning: "앉다" },
+  { type: "ABB", base: "sleep", past: "slept", pp: "slept", meaning: "자다" },
+  { type: "ABB", base: "slide", past: "slid", pp: "slid", meaning: "미끄러지다" },
+  { type: "ABB", base: "smell", past: "smelled", pp: "smelled", meaning: "냄새 맡다 (규칙)" },
+  { type: "ABB", base: "smell", past: "smelt", pp: "smelt", meaning: "냄새 맡다 (불규칙)" },
+  { type: "ABB", base: "spend", past: "spent", pp: "spent", meaning: "소비하다" },
+  { type: "ABB", base: "stand", past: "stood", pp: "stood", meaning: "서다" },
+  { type: "ABB", base: "teach", past: "taught", pp: "taught", meaning: "가르치다" },
+  { type: "ABB", base: "tell", past: "told", pp: "told", meaning: "말하다" },
+  { type: "ABB", base: "think", past: "thought", pp: "thought", meaning: "생각하다" },
+  { type: "ABB", base: "understand", past: "understood", pp: "understood", meaning: "이해하다" },
+  { type: "ABB", base: "win", past: "won", pp: "won", meaning: "이기다" },
+
+  // 3. ABC형
+  { type: "ABC", base: "be", past: "was", pp: "been", meaning: "~이다 (was형)" },
+  { type: "ABC", base: "be", past: "were", pp: "been", meaning: "~이다 (were형)" },
+  { type: "ABC", base: "bear", past: "bore", pp: "born", meaning: "낳다/태어나다" },
+  { type: "ABC", base: "bear", past: "bore", pp: "borne", meaning: "견디다/지탱하다" },
+  { type: "ABC", base: "begin", past: "began", pp: "begun", meaning: "시작하다" },
+  { type: "ABC", base: "bite", past: "bit", pp: "bitten", meaning: "물다" },
+  { type: "ABC", base: "blow", past: "blew", pp: "blown", meaning: "불다" },
+  { type: "ABC", base: "break", past: "broke", pp: "broken", meaning: "깨뜨리다" },
+  { type: "ABC", base: "choose", past: "chose", pp: "chosen", meaning: "선택하다" },
+  { type: "ABC", base: "do", past: "did", pp: "done", meaning: "하다" },
+  { type: "ABC", base: "draw", past: "drew", pp: "drawn", meaning: "그리다" },
+  { type: "ABC", base: "drink", past: "drank", pp: "drunk", meaning: "마시다" },
+  { type: "ABC", base: "drive", past: "drove", pp: "driven", meaning: "운전하다" },
+  { type: "ABC", base: "eat", past: "ate", pp: "eaten", meaning: "먹다" },
+  { type: "ABC", base: "fall", past: "fell", pp: "fallen", meaning: "떨어지다" },
+  { type: "ABC", base: "forget", past: "forgot", pp: "forgotten", meaning: "잊다" },
+  { type: "ABC", base: "fly", past: "flew", pp: "flown", meaning: "날다" },
+  { type: "ABC", base: "give", past: "gave", pp: "given", meaning: "주다" },
+  { type: "ABC", base: "go", past: "went", pp: "gone", meaning: "가다" },
+  { type: "ABC", base: "grow", past: "grew", pp: "grown", meaning: "자라다" },
+  { type: "ABC", base: "know", past: "knew", pp: "known", meaning: "알다" },
+  { type: "ABC", base: "ride", past: "rode", pp: "ridden", meaning: "타다" },
+  { type: "ABC", base: "ring", past: "rang", pp: "rung", meaning: "울리다" },
+  { type: "ABC", base: "rise", past: "rose", pp: "risen", meaning: "오르다" },
+  { type: "ABC", base: "see", past: "saw", pp: "seen", meaning: "보다" },
+  { type: "ABC", base: "sing", past: "sang", pp: "sung", meaning: "노래하다" },
+  { type: "ABC", base: "show", past: "showed", pp: "shown", meaning: "보여주다" },
+  { type: "ABC", base: "speak", past: "spoke", pp: "spoken", meaning: "말하다" },
+  { type: "ABC", base: "swim", past: "swam", pp: "swum", meaning: "수영하다" },
+  { type: "ABC", base: "take", past: "took", pp: "taken", meaning: "가지고 가다" },
+  { type: "ABC", base: "throw", past: "threw", pp: "thrown", meaning: "던지다" },
+  { type: "ABC", base: "wake", past: "woke", pp: "woken", meaning: "깨다" },
+  { type: "ABC", base: "wear", past: "wore", pp: "worn", meaning: "입다" },
+  { type: "ABC", base: "write", past: "wrote", pp: "written", meaning: "쓰다" },
+
+  // 4. ABA형
+  { type: "ABA", base: "become", past: "became", pp: "become", meaning: "되다" },
+  { type: "ABA", base: "come", past: "came", pp: "come", meaning: "오다" },
+  { type: "ABA", base: "run", past: "ran", pp: "run", meaning: "달리다" }
+];
+
+let curSpeed = 1.15;
+let curList = [...VERBS];
+let isPlaying = false;
+let playIdx = 0;
+
+function updateSpeed() {
+  curSpeed = parseFloat(document.getElementById('speedSel').value);
+}
+
+function setFilter(type, btn) {
+  stopAll();
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  curList = (type === 'ALL') ? [...VERBS] : VERBS.filter(v => v.type === type);
+  render();
+}
+
+function render() {
+  const c = document.getElementById('list');
+  c.innerHTML = curList.map((v, i) => `
+    <div class="word-card" id="card-${i}">
+      <span class="badge">${v.type}</span>
+      <div class="verbs">
+        <button class="v-chip" id="c-${i}-0" onclick="saySingle('${v.base}', ${i}, 0)">${v.base}</button>
+        <span class="arrow">➔</span>
+        <button class="v-chip" id="c-${i}-1" onclick="saySingle('${v.pastSay || v.past}', ${i}, 1)">${v.past}</button>
+        <span class="arrow">➔</span>
+        <button class="v-chip" id="c-${i}-2" onclick="saySingle('${v.ppSay || v.pp}', ${i}, 2)">${v.pp}</button>
+      </div>
+      <span class="meaning">${v.meaning}</span>
+      <button class="btn-row" onclick="playChantRow(${i})">🔊 챈트</button>
+    </div>
+  `).join('');
+}
+
+function speakWord(text, onDone) {
+  window.speechSynthesis.cancel();
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.lang = 'en-US';
+  utter.rate = curSpeed;
+
+  let finished = false;
+  const done = () => {
+    if (!finished) {
+      finished = true;
+      if (onDone) onDone();
+    }
+  };
+
+  utter.onend = done;
+  utter.onerror = done;
+  setTimeout(done, 2000); // 큐 멈춤 방지
+  window.speechSynthesis.speak(utter);
+}
+
+function saySingle(text, r, c) {
+  stopAll();
+  markChip(r, c);
+  speakWord(text, clearMarks);
+}
+
+function playChantRow(i, onComplete) {
+  const v = curList[i];
+  if (!v) return;
+
+  const card = document.getElementById(`card-${i}`);
+  if (card) {
+    card.classList.add('active-card');
+    card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  // 1: 원형
+  markChip(i, 0);
+  speakWord(v.base, () => {
+    setTimeout(() => {
+      // 2: 과거형
+      markChip(i, 1);
+      speakWord(v.pastSay || v.past, () => {
+        setTimeout(() => {
+          // 3: 과거분사
+          markChip(i, 2);
+          speakWord(v.ppSay || v.pp, () => {
+            clearMarks();
+            if (card) card.classList.remove('active-card');
+            if (onComplete) setTimeout(onComplete, 250);
+          });
+        }, 160);
+      });
+    }, 160);
+  });
+}
+
+function togglePlayAll() {
+  if (isPlaying) {
+    stopAll();
+  } else {
+    isPlaying = true;
+    playIdx = 0;
+    const btn = document.getElementById('btnPlayAll');
+    btn.textContent = '⏹ 챈트 중지';
+    btn.style.background = '#ef4444';
+    runNextChant();
+  }
+}
+
+function runNextChant() {
+  if (!isPlaying || playIdx >= curList.length) {
+    stopAll();
+    return;
+  }
+  playChantRow(playIdx, () => {
+    playIdx++;
+    runNextChant();
+  });
+}
+
+function stopAll() {
+  isPlaying = false;
+  window.speechSynthesis.cancel();
+  clearMarks();
+  document.querySelectorAll('.word-card').forEach(c => c.classList.remove('active-card'));
+  const btn = document.getElementById('btnPlayAll');
+  if (btn) {
+    btn.textContent = '▶ 전체 연속 재생';
+    btn.style.background = '#4f46e5';
+  }
+}
+
+function markChip(r, c) {
+  clearMarks();
+  const el = document.getElementById(`c-${r}-${c}`);
+  if (el) el.classList.add('speaking');
+}
+
+function clearMarks() {
+  document.querySelectorAll('.v-chip').forEach(el => el.classList.remove('speaking'));
+}
+
+window.onload = render;
+</script>
+</body>
+</html>
